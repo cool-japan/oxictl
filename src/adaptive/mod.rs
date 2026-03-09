@@ -1,0 +1,21 @@
+pub mod dual_control;
+pub mod gain_scheduler;
+pub mod gain_scheduling;
+pub mod lyapunov_mrac;
+pub mod mrac;
+pub mod mrac_second_order;
+pub mod neural;
+pub mod rls;
+pub mod self_tuning_regulator;
+pub mod stc;
+
+pub use dual_control::DualController;
+pub use gain_scheduler::GainScheduler;
+pub use gain_scheduling::{ScheduledPid, TransitionDetector};
+pub use lyapunov_mrac::LyapunovMrac;
+pub use mrac::{Mrac, MracNormalized};
+pub use mrac_second_order::{LyapunovMracFirstOrder, MracSecondOrder};
+pub use neural::{NeuralController, RlPolicyBridge};
+pub use rls::Rls;
+pub use self_tuning_regulator::{SelfTuningRegulator, StrMode};
+pub use stc::SelfTuningController;

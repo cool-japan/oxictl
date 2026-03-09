@@ -1,0 +1,127 @@
+# --- Rust / Cargo ---
+/target/
+Cargo.lock
+**/*.rs.bk
+*.pdb
+*.d
+
+# --- Build artifacts & intermediate files ---
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.lib
+*.exe
+*.out
+*.rlib
+
+# --- IDE / Editor files ---
+
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# IntelliJ / CLion
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Vim
+*.swp
+*.swo
+*~
+tags
+
+# Emacs
+\#*\#
+.\#*
+*.elc
+*~
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# --- OS-specific files ---
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+*~
+.directory
+
+# --- Documentation build outputs ---
+/target/doc/
+doc/build/
+
+# --- Benchmark output data ---
+/benches/output/
+/benches/results/
+*.bench
+criterion/
+.criterion/
+
+# --- Profiling / Coverage data ---
+*.profraw
+*.profdata
+*.gcda
+*.gcno
+*.gcov
+/coverage/
+/tarpaulin-report.html
+lcov.info
+cobertura.xml
+perf.data
+perf.data.old
+flamegraph.svg
+flamegraph*.svg
+cachegrind.out.*
+callgrind.out.*
+massif.out.*
+heaptrack.*
+
+# --- WASM build outputs ---
+/pkg/
+/wasm-pack-log
+*.wasm
+*.wasm.map
+/web/dist/
+
+# --- Temporary files ---
+*.tmp
+*.temp
+*.bak
+*.orig
+*.log
+/tmp/
+
+# --- Environment files ---
+.env
+.env.*
+!.env.example
+
+# --- Backup files ---
+*.bk
+*.backup
+*.old
+*~
