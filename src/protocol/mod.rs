@@ -16,3 +16,6 @@ pub use modbus::{
     TcpFrame, TcpSession,
 };
 pub use ros2::{ActionServer, ActionStatus, Float64Array, JointState, Twist};
+
+#[cfg(feature = "dds")]
+pub mod dds;

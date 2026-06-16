@@ -124,7 +124,6 @@ pub struct FixedIntervalSmoother<S: ControlScalar, const N: usize, const M: usiz
     /// Process noise covariance Q (N×N).
     /// Stored for API completeness; the smoother uses stored `p_pred` (which
     /// incorporates Q from the forward filter pass) rather than Q directly.
-    #[allow(dead_code)]
     q: Matrix<S, N, N>,
     /// Measurement noise covariance R (M×M).
     r: Matrix<S, M, M>,
@@ -176,6 +175,11 @@ impl<S: ControlScalar, const N: usize, const M: usize, const T: usize>
     /// Returns true when no slots are stored.
     pub fn is_empty(&self) -> bool {
         self.count == 0
+    }
+
+    /// Process noise covariance matrix Q used during construction.
+    pub fn process_noise_cov(&self) -> &Matrix<S, N, N> {
+        &self.q
     }
 
     /// Run the two-filter backward pass and return smoothed estimates.

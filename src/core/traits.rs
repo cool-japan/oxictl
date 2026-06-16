@@ -1,8 +1,8 @@
-use crate::core::scalar::ControlScalar;
+use crate::core::scalar::{ControlScalar, PidScalar};
 use crate::core::signal::{ControlOutput, Feedback, Setpoint};
 
 /// A generic controller that computes control output from setpoint and feedback.
-pub trait Controller<S: ControlScalar> {
+pub trait Controller<S: PidScalar> {
     /// Compute one control step.
     /// `dt` is the time step in seconds.
     fn update(&mut self, setpoint: &Setpoint<S>, feedback: &Feedback<S>, dt: S)

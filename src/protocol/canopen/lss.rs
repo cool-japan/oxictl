@@ -19,10 +19,8 @@ pub enum LssClientCoState {
 }
 
 /// LSS command service codes.
-#[allow(unused)]
 mod cs {
     pub const SWITCH_STATE_GLOBAL: u8 = 0x04;
-    pub const IDENTIFY_SLAVE: u8 = 0x46;
     pub const IDENTIFY_SLAVE_RESP: u8 = 0x4F;
     pub const CONFIGURE_NODE_ID: u8 = 0x11;
     pub const CONFIGURE_BAUDRATE: u8 = 0x13;
@@ -238,7 +236,6 @@ pub struct LssSlave {
     /// Currently configured node ID.
     node_id: u8,
     /// Baudrate in bps (updated on configure baudrate command).
-    #[allow(dead_code)]
     baudrate: u32,
     /// Identify match count (selective identify: 4 consecutive matches).
     match_count: u8,
@@ -273,6 +270,11 @@ impl LssSlave {
     /// Current node ID.
     pub fn node_id(&self) -> u8 {
         self.node_id
+    }
+
+    /// Current baudrate in bps.
+    pub fn baudrate(&self) -> u32 {
+        self.baudrate
     }
 
     /// Process an incoming LSS frame.

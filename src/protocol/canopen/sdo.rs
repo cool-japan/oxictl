@@ -241,19 +241,9 @@ impl<const N: usize> SdoServer<N> {
         index: u16,
         subindex: u8,
     ) -> Result<CanFrame, SdoError> {
-        // Check access
-        let entry = od.entry(index, subindex).ok_or_else(|| {
-            // Distinguish IndexNotFound vs SubindexNotFound
-            let has_index = (0u16..=0xFFFF).any(|_| false); // stub; use read to probe
-            let _ = has_index;
-            SdoError::Abort(SdoAbortCode::ObjectDoesNotExist)
-        })?;
-
-        if !entry.access_type.can_read() {
-            return Err(SdoError::Abort(SdoAbortCode::WriteOnly));
-        }
-
-        let value = entry.value;
+        let value = od
+            .read(index, subindex)
+            .map_err(|e| SdoError::Abort(od_error_to_abort(e)))?;
         let (val_data, n_empty) = encode_expedited(value);
         // cs = 0x43 | (n_empty << 2) — expedited, size indicated
         let resp_cs = 0x43u8 | (n_empty << 2);
@@ -507,6 +497,44 @@ mod tests {
         let req = make_upload_req(0x9999, 0);
         let err = server.process(&req, &mut od).unwrap_err();
         assert_eq!(err, SdoError::Abort(SdoAbortCode::ObjectDoesNotExist));
+    }
+
+    #[test]
+    fn upload_subindex_does_not_exist() {
+        let mut od = StaticOd::<32>::new();
+        od.insert(OdEntry::new(
+            0x1018,
+            0,
+            DataType::Unsigned8,
+            AccessType::RO,
+            OdEntryValue::U8(4),
+        ))
+        .unwrap();
+        let server = SdoServer::<32>::new(1);
+        // Subindex 5 does not exist under 0x1018, but the index itself does.
+        let req = make_upload_req(0x1018, 5);
+        let err = server.process(&req, &mut od).unwrap_err();
+        assert_eq!(err, SdoError::Abort(SdoAbortCode::SubindexDoesNotExist));
+    }
+
+    #[test]
+    fn upload_object_does_not_exist() {
+        let mut od = make_od();
+        let server = SdoServer::<32>::new(1);
+        // Index 0x8888 is not present in the OD at all.
+        let req = make_upload_req(0x8888, 0);
+        let err = server.process(&req, &mut od).unwrap_err();
+        assert_eq!(err, SdoError::Abort(SdoAbortCode::ObjectDoesNotExist));
+    }
+
+    #[test]
+    fn upload_write_only_returns_error() {
+        let mut od = make_od();
+        let server = SdoServer::<32>::new(1);
+        // 0x2100:0 is AccessType::WO — upload must be rejected.
+        let req = make_upload_req(0x2100, 0);
+        let err = server.process(&req, &mut od).unwrap_err();
+        assert_eq!(err, SdoError::Abort(SdoAbortCode::WriteOnly));
     }
 
     #[test]

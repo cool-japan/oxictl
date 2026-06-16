@@ -1,8 +1,8 @@
-use crate::core::scalar::ControlScalar;
+use crate::core::scalar::PidScalar;
 
 /// Anti-windup strategy for PID integral term.
 #[derive(Debug, Clone, Copy, Default)]
-pub enum AntiWindupMethod<S: ControlScalar> {
+pub enum AntiWindupMethod<S: PidScalar> {
     /// No anti-windup; integrator runs freely.
     None,
     /// Clamp the integrator when output is saturated.
@@ -15,7 +15,7 @@ pub enum AntiWindupMethod<S: ControlScalar> {
     },
 }
 
-impl<S: ControlScalar> AntiWindupMethod<S> {
+impl<S: PidScalar> AntiWindupMethod<S> {
     /// Compute the integrator correction term.
     /// - `output_unlimited`: raw PID output before limiting
     /// - `output_limited`: output after saturation limiter

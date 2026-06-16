@@ -1,13 +1,13 @@
-use crate::core::scalar::ControlScalar;
+use crate::core::scalar::{ControlScalar, PidScalar};
 
 /// Clamps a value between min and max limits.
 #[derive(Debug, Clone, Copy)]
-pub struct OutputLimiter<S: ControlScalar> {
+pub struct OutputLimiter<S: PidScalar> {
     min: S,
     max: S,
 }
 
-impl<S: ControlScalar> OutputLimiter<S> {
+impl<S: PidScalar> OutputLimiter<S> {
     pub fn new(min: S, max: S) -> Self {
         debug_assert!(min <= max, "OutputLimiter: min must be <= max");
         Self { min, max }

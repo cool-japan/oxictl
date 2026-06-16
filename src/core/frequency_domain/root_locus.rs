@@ -217,7 +217,7 @@ fn compute_cubic_roots<S: ControlScalar>(c1: S, c2: S, c3: S, roots: &mut HVec<C
         } else {
             // Two complex conjugate roots
             let re_part = -(u + v) / S::TWO - shift;
-            let im_part = S::from_f64(3.0_f64.sqrt() / 2.0) * (u - v);
+            let im_part = S::from_f64(libm::sqrt(3.0_f64) / 2.0) * (u - v);
             let _ = roots.push(Complex::new(re_part, im_part));
             let _ = roots.push(Complex::new(re_part, -im_part));
         }

@@ -3,7 +3,7 @@
 [![Crates.io](https://img.shields.io/crates/v/oxictl.svg)](https://crates.io/crates/oxictl)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-nightly-orange.svg)]()
-[![Tests](https://img.shields.io/badge/tests-2586%20passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-2909%20passing-brightgreen.svg)]()
 
 > Comprehensive, `no_std`-compatible control systems framework for embedded robotics and industrial automation.
 > Pure Rust — no C/Fortran dependencies.
@@ -12,12 +12,12 @@
 
 | Metric | Value |
 |--------|-------|
-| Version | 0.1.0 |
-| Tests | 2,586 passing |
-| Lines of Code | 77,783 |
-| Rust Files | 418 |
+| Version | 0.1.1 |
+| Tests | 2,909 passing |
+| Lines of Code | 102,351 |
+| Rust Files | 610 |
 | Clippy Warnings | 0 |
-| Release Date | 2026-03-09 |
+| Release Date | 2026-06-16 |
 
 ## Features
 
@@ -45,7 +45,7 @@
 | `power` | `power` | SRF-PLL, boost/buck/buck-boost converters, THD analysis, VSI inverter with LCL filter, MPPT (P&O/InC/FracOCV), active power filter, SPWM, SVPWM 3-level |
 | `scheduler` | `scheduler` | Fixed-rate task, multi-rate + priority scheduler, task timing (EMA), deadline monitor |
 | `kinematics` | `kinematics` | Forward/inverse (geometric Pieper + Levenberg-Marquardt numerical), Jacobian, SCARA 4-DOF, 6-DOF dynamics (inertia/Coriolis), workspace reachability analysis |
-| `protocol` | `protocol` | ROS2 CDR/QoS/SPSC, Modbus RTU/TCP/PDU/register map, CANopen NMT/SDO/PDO/OD/LSS, EtherCAT master/slave/DC/FMMU/mailbox |
+| `protocol` | `protocol` | Modbus RTU/TCP, CANopen NMT/SDO/PDO/OD/LSS, EtherCAT master/slave/DC; see `dds-*` features for RTPS 2.3/ROS2 DDS stack |
 | `fuzzy` | `fuzzy` | Triangular/trapezoidal/Gaussian/sigmoid membership functions, Mamdani/Sugeno inference, CoG/MOM/bisector defuzzification, fuzzy PID |
 | `optimal` | `optimal` | ODE solvers (Euler/RK4/RK45 Fehlberg), single/multiple shooting, Pontryagin principle, bang-bang control |
 | `neural` | `neural` | Activations (ReLU/Swish/…), DenseLayer (Xavier init, backprop), MLP, RBF network, neural PID (3-network online adjustment) |
@@ -70,6 +70,7 @@
 | `hybrid` | `hybrid` | Hybrid automaton (guards/resets/invariants), switched LTI (dwell-time stability), PWA system + controller |
 | `sysid` | `sysid` | ARX (batch LS + online RLS), ARMAX (ELS), IV/Refined IV, N4SID subspace, validation (FIT%, Ljung-Box) |
 | `io` | *(always)* | Kizzasi bridge, JSON state export |
+| `core/fixed_point` | `fixed_point` | Q15.16/Q3.29/Q7.24 fixed-point types; `PidScalar` trait enabling PID on embedded targets without FPU |
 
 ## Quickstart
 
@@ -164,6 +165,14 @@ kf.update(&measurement)?;
 | `antiwindup` | no | no | Advanced anti-windup compensators |
 | `hybrid` | no | no | Hybrid automata and switched systems |
 | `sysid` | no | no | System identification (ARX, ARMAX, N4SID) |
+| `fixed_point` | no | no | Q-format fixed-point arithmetic (Q15.16, Q3.29, Q7.24); `PidScalar` trait for embedded PID |
+| `dds` | no | no | RTPS 2.3 wire-protocol parser/serializer (`no_std`, zero-alloc) |
+| `dds-transport` | no | yes | UDPv4 transport for DDS (requires `dds`) |
+| `dds-discovery` | no | yes | SPDP/SEDP participant + endpoint discovery (requires `dds-transport`) |
+| `dds-stateless` | no | yes | Best-effort StatelessWriter/StatelessReader (requires `dds-discovery`) |
+| `dds-stateful` | no | yes | Reliable StatefulWriter/StatefulReader with HEARTBEAT/ACKNACK (requires `dds-stateless`) |
+| `dds-ros2` | no | yes | ROS2 bridge — topic naming, builtins, CDR codecs (requires `dds-stateful`) |
+| `dds-api` | no | yes | High-level DDS API: `Participant`, `Publisher<T>`, `Subscription<T>`, `ServiceClient<S>`, `ServiceServer<S>`, `ActionClient<A>`, `ActionServer<A>` (requires `dds-ros2`) |
 
 Enable all features for full functionality:
 
@@ -220,6 +229,10 @@ Internals use:
 | `antiwindup_demo` | `antiwindup` | AW compensator on saturated actuator |
 | `pso_pid_tuning` | `optim` | PSO auto-tuning PID gains |
 | `vrft_tuning` | `data_driven` | VRFT data-driven controller tuning |
+| `fixed_point_pid` | `fixed_point`, `pid` | PID controller with Q15.16 fixed-point arithmetic, first-order plant convergence |
+| `ros2_chatter` | `dds-api` | ROS2-compatible pub/sub with `std_msgs::String` on `rt/chatter`, in-process loopback |
+| `ros2_imu_publisher` | `dds-api` | `sensor_msgs::Imu` publisher at simulated 100 Hz with quaternion orientation |
+| `ros2_twist_subscriber` | `dds-api` | `geometry_msgs::Twist` subscriber driving a simulated unicycle model |
 
 Run any example:
 
@@ -252,6 +265,28 @@ use oxictl::protocol::ethercat::{EtherCatMaster, SlaveConfig, DcConfig, MailboxP
 
 ```rust
 use oxictl::protocol::ros2::{CdrSerializer, QosProfile, SpscTopic};
+```
+
+### DDS / RTPS 2.3 (ROS2-compatible)
+
+```rust
+use oxictl::protocol::dds::api::{Participant, create_client, create_server};
+use oxictl::protocol::dds::discovery::qos_profile::QosProfile;
+use oxictl::protocol::dds::ros2::msgs::std_msgs::StdString;
+use oxictl::protocol::dds::types::guid::GuidPrefix;
+
+// Two participants in the same process (loopback demo)
+let qos = QosProfile::ros2_default();
+let mut p1 = Participant::new(0, GuidPrefix([0x01; 12]), qos)?;
+let mut p2 = Participant::new(0, GuidPrefix([0x02; 12]), qos)?;
+
+// Explicit peer registration (auto-discovery via SPDP multicast also works)
+let addr2 = p2.local_metatraffic_addr()?;
+p1.add_peer(addr2)?;
+
+let pub_ = p1.create_publisher::<StdString>("rt/chatter", &qos)?;
+let sub_ = p2.create_subscription::<StdString>("rt/chatter", &qos)?;
+// ...publish, spin_once, take
 ```
 
 ## Architecture
@@ -300,6 +335,10 @@ oxictl/src/
   hybrid/             Hybrid automaton, switched LTI, PWA
   sysid/              ARX, ARMAX, IV, N4SID, validation
   io/                 Kizzasi bridge, JSON export
+  core/fixed_point/   Q-format fixed-point types (Q15.16, Q3.29, Q7.24), PidScalar trait
+  protocol/dds/       RTPS 2.3 wire protocol (no_std), UDPv4 transport, SPDP/SEDP discovery
+  protocol/dds/api/   Participant, Publisher<T>, Subscription<T>, ServiceClient/Server, ActionClient/Server
+  protocol/dds/ros2/  ROS2 bridge: topic naming, CDR codecs, 35 standard message types
 ```
 
 ## License

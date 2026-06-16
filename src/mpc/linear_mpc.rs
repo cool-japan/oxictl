@@ -290,22 +290,6 @@ impl<S: ControlScalar, const N: usize, const I: usize, const H: usize> LinearMpc
     }
 }
 
-/// Compute prediction matrices for unconstrained MPC (for offline analysis).
-///
-/// Returns (Phi, Gamma) where:
-///   X_pred = Phi * x0 + Gamma * U
-///
-/// Phi: (H*N) × N  — not constructed here (would require alloc)
-/// Instead, inline rollout is used in the solver above.
-#[allow(dead_code)]
-fn build_prediction_unused<S: ControlScalar, const N: usize, const I: usize>(
-    a: &Matrix<S, N, N>,
-    _b: &Matrix<S, N, I>,
-) -> Matrix<S, N, N> {
-    // A^1
-    *a
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

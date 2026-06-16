@@ -66,6 +66,10 @@ pub struct TheveninBattery<S: ControlScalar> {
     v_max: S,
     /// Euler integration step \[s\].
     dt: S,
+    /// Cumulative absolute charge throughput \[Ah\] across all step() calls.
+    cumulative_throughput_ah: S,
+    /// Total throughput at end-of-life \[Ah\]; default = 500 × q_nom.
+    lifetime_throughput_ah: S,
 }
 
 impl<S: ControlScalar> TheveninBattery<S> {
@@ -112,6 +116,8 @@ impl<S: ControlScalar> TheveninBattery<S> {
             v_min,
             v_max,
             dt,
+            cumulative_throughput_ah: S::ZERO,
+            lifetime_throughput_ah: q_nom * S::from_f64(500.0),
         })
     }
 
@@ -130,6 +136,20 @@ impl<S: ControlScalar> TheveninBattery<S> {
             S::ONE,
             S::from_f64(1e-3),
         )
+    }
+
+    /// Override the lifetime throughput used for SOH calculation \[Ah\].
+    ///
+    /// Default is 500 × q_nom (≈500 full equivalent cycles for typical Li-ion).
+    ///
+    /// # Errors
+    /// Returns [`BatteryError::InvalidParameter`] if `ah` is not positive.
+    pub fn with_lifetime_throughput(mut self, ah: S) -> Result<Self, BatteryError> {
+        if ah <= S::ZERO {
+            return Err(BatteryError::InvalidParameter);
+        }
+        self.lifetime_throughput_ah = ah;
+        Ok(self)
     }
 
     /// Advance the simulation by one time step.
@@ -169,6 +189,9 @@ impl<S: ControlScalar> TheveninBattery<S> {
         self.state[0] = soc + soc_dot * self.dt;
         self.state[1] = v_rc + v_rc_dot * self.dt;
 
+        // Track cumulative charge throughput for SOH model (|I| * dt / 3600 = Ah).
+        self.cumulative_throughput_ah += current.abs() * self.dt / S::from_f64(3600.0);
+
         // Bounds check on SOC
         if self.state[0] > S::ONE {
             return Err(BatteryError::Overcharged);
@@ -206,12 +229,28 @@ impl<S: ControlScalar> TheveninBattery<S> {
         self.open_circuit_voltage() - self.state[1]
     }
 
-    /// State of health (placeholder — always returns 1.0).
+    /// State of health based on cumulative charge throughput.
     ///
-    /// A full implementation would track capacity fade and resistance growth.
+    /// Uses a linear capacity-fade model: SOH = 1 − (throughput / lifetime_throughput).
+    /// Returns 1.0 for a new battery, 0.0 after `lifetime_throughput_ah` of usage.
+    /// Clamped to \[0, 1\].
     #[inline]
     pub fn state_of_health(&self) -> S {
-        S::ONE
+        let frac = self.cumulative_throughput_ah / self.lifetime_throughput_ah;
+        let soh = S::ONE - frac;
+        if soh < S::ZERO {
+            S::ZERO
+        } else if soh > S::ONE {
+            S::ONE
+        } else {
+            soh
+        }
+    }
+
+    /// Cumulative absolute charge throughput \[Ah\].
+    #[inline]
+    pub fn cumulative_throughput_ah(&self) -> S {
+        self.cumulative_throughput_ah
     }
 
     /// Reset the battery to a given initial SOC.
@@ -448,6 +487,66 @@ mod tests {
         assert!(
             (v_oc - 3.6).abs() < 1e-10,
             "OCV at SOC=0.5 should be 3.6 V, got {v_oc}"
+        );
+    }
+
+    #[test]
+    fn soh_starts_at_one_for_new_battery() {
+        let bat = make_battery(1.0);
+        assert_eq!(
+            bat.state_of_health(),
+            1.0_f64,
+            "Fresh battery SOH should be exactly 1.0"
+        );
+    }
+
+    #[test]
+    fn soh_decreases_with_throughput() {
+        // Run 100 steps and record SOH
+        let mut bat_100 = make_battery(1.0);
+        for _ in 0..100 {
+            bat_100.step(1.0).expect("step failed");
+        }
+        let soh_at_100 = bat_100.state_of_health();
+
+        // Run 1000 steps (same battery fresh)
+        let mut bat_1000 = make_battery(1.0);
+        for _ in 0..1000 {
+            bat_1000.step(1.0).expect("step failed");
+        }
+        let soh_at_1000 = bat_1000.state_of_health();
+
+        assert!(
+            soh_at_1000 < 1.0_f64,
+            "SOH should be less than 1.0 after 1000 discharge steps, got {soh_at_1000}"
+        );
+        assert!(
+            soh_at_100 > soh_at_1000,
+            "SOH after 100 steps ({soh_at_100}) should be greater than after 1000 steps ({soh_at_1000})"
+        );
+    }
+
+    #[test]
+    fn soh_clamped_to_zero_after_lifetime() {
+        // Tiny lifetime (0.001 Ah) so it is exhausted quickly
+        let mut bat = TheveninBattery::<f64>::new(2.5, 0.05, 0.02, 2000.0, 3.0, 4.2, 1.0, 1e-3)
+            .expect("construct")
+            .with_lifetime_throughput(0.001)
+            .expect("set lifetime throughput");
+
+        // Step with high current until lifetime is exceeded (or overdischarged)
+        for _ in 0..100_000 {
+            match bat.step(10.0) {
+                Ok(_) => {}
+                Err(BatteryError::Overdischarged) => break,
+                Err(e) => panic!("Unexpected error: {e:?}"),
+            }
+        }
+
+        let soh = bat.state_of_health();
+        assert_eq!(
+            soh, 0.0_f64,
+            "SOH should be clamped to 0.0 after exceeding lifetime throughput, got {soh}"
         );
     }
 }

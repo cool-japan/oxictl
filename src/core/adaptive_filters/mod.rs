@@ -19,8 +19,6 @@
 //!
 //! [`ControlScalar`]: crate::core::scalar::ControlScalar
 
-#![cfg_attr(not(feature = "std"), no_std)]
-
 pub mod affine_projection;
 pub mod lms;
 pub mod rls;

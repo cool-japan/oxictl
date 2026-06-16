@@ -280,7 +280,6 @@ pub struct SecondOrderIsmc<S: ControlScalar> {
     /// the nominal trajectory since ṡ_nom = 0 for the chosen control law).
     sigma: S,
     /// Sampling period — retained for future σ adaptation extensions.
-    #[allow(dead_code)]
     dt: S,
 }
 
@@ -339,6 +338,11 @@ impl<S: ControlScalar> SecondOrderIsmc<S> {
     /// Reset integral state.
     pub fn reset(&mut self) {
         self.sigma = S::ZERO;
+    }
+
+    /// Sampling period (seconds).
+    pub fn sample_period(&self) -> S {
+        self.dt
     }
 
     /// Compute control input.

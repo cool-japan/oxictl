@@ -1,11 +1,11 @@
-use crate::core::scalar::ControlScalar;
+use crate::core::scalar::PidScalar;
 
 /// First-order IIR low-pass filter for the derivative term.
 /// Implements the incomplete derivative: D(s) = Kd * s / (1 + tau_f * s)
 /// Discretized using backward Euler: y[n] = alpha * y[n-1] + (1-alpha) * x[n]
 /// where alpha = tau_f / (tau_f + dt)
 #[derive(Debug, Clone, Copy)]
-pub struct DerivativeFilter<S: ControlScalar> {
+pub struct DerivativeFilter<S: PidScalar> {
     /// Filter time constant (seconds). Larger = more filtering.
     tau_f: S,
     /// Previous filtered output.
@@ -14,7 +14,7 @@ pub struct DerivativeFilter<S: ControlScalar> {
     initialized: bool,
 }
 
-impl<S: ControlScalar> DerivativeFilter<S> {
+impl<S: PidScalar> DerivativeFilter<S> {
     /// Create a new derivative filter.
     /// `tau_f` is the filter time constant. Typical: tau_f = Kd / (N * Kp) where N = 8..20.
     pub fn new(tau_f: S) -> Self {

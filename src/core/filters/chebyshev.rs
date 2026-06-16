@@ -179,12 +179,6 @@ fn arcsinh<S: ControlScalar>(x: S) -> S {
     (x + (x * x + S::ONE).sqrt()).ln()
 }
 
-/// arctanh via identity: arctanh(x) = (1/2)·ln((1+x)/(1-x))
-#[allow(dead_code)]
-fn arctanh<S: ControlScalar>(x: S) -> S {
-    S::HALF * ((S::ONE + x) / (S::ONE - x)).ln()
-}
-
 // ─────────────────────────────────────────────────────────────
 //  Design function: Chebyshev Type I lowpass
 // ─────────────────────────────────────────────────────────────

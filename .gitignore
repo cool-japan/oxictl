@@ -16,6 +16,9 @@ Cargo.lock
 *.out
 *.rlib
 
+# Claude AI config
+**/.claude/
+
 # --- IDE / Editor files ---
 
 # VS Code
@@ -125,3 +128,8 @@ heaptrack.*
 *.backup
 *.old
 *~
+
+# Rustc ICE dumps
+rustc-ice-*.txt
+
+target

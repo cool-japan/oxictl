@@ -1,5 +1,5 @@
 use crate::core::saturation::OutputLimiter;
-use crate::core::scalar::ControlScalar;
+use crate::core::scalar::PidScalar;
 use crate::core::signal::{ControlOutput, Feedback, Setpoint};
 use crate::core::traits::Controller;
 use crate::pid::anti_windup::AntiWindupMethod;
@@ -7,7 +7,7 @@ use crate::pid::derivative_filter::DerivativeFilter;
 
 /// Configuration for constructing a PID controller.
 #[derive(Debug, Clone)]
-pub struct PidConfig<S: ControlScalar> {
+pub struct PidConfig<S: PidScalar> {
     pub kp: S,
     pub ki: S,
     pub kd: S,
@@ -23,7 +23,7 @@ pub struct PidConfig<S: ControlScalar> {
     pub derivative_filter_tau: Option<S>,
 }
 
-impl<S: ControlScalar> PidConfig<S> {
+impl<S: PidScalar> PidConfig<S> {
     /// Create a P-only controller.
     pub fn p(kp: S) -> Self {
         Self {
@@ -54,6 +54,8 @@ impl<S: ControlScalar> PidConfig<S> {
 
     /// Create a PID controller.
     pub fn pid(kp: S, ki: S, kd: S) -> Self {
+        // from_f64 and Float::max are not in PidScalar; use from_int + explicit comparison
+        let safe_kp = if kp > S::EPSILON { kp } else { S::EPSILON };
         Self {
             kp,
             ki,
@@ -62,7 +64,7 @@ impl<S: ControlScalar> PidConfig<S> {
             gamma: S::ZERO,
             output_limiter: None,
             anti_windup: AntiWindupMethod::Clamping,
-            derivative_filter_tau: Some(kd / (S::from_f64(10.0) * kp.max(S::EPSILON))),
+            derivative_filter_tau: Some(kd / (S::from_int(10) * safe_kp)),
         }
     }
 
@@ -108,7 +110,7 @@ impl<S: ControlScalar> PidConfig<S> {
 
 /// PID controller with 2-DOF support, anti-windup, and derivative filtering.
 #[derive(Debug, Clone)]
-pub struct Pid<S: ControlScalar> {
+pub struct Pid<S: PidScalar> {
     kp: S,
     ki: S,
     kd: S,
@@ -123,7 +125,7 @@ pub struct Pid<S: ControlScalar> {
     saturated: bool,
 }
 
-impl<S: ControlScalar> Pid<S> {
+impl<S: PidScalar> Pid<S> {
     pub fn kp(&self) -> S {
         self.kp
     }
@@ -147,7 +149,7 @@ impl<S: ControlScalar> Pid<S> {
     }
 }
 
-impl<S: ControlScalar> Controller<S> for Pid<S> {
+impl<S: PidScalar> Controller<S> for Pid<S> {
     fn update(
         &mut self,
         setpoint: &Setpoint<S>,

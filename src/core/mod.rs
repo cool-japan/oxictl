@@ -1,6 +1,8 @@
 pub mod adaptive_filters;
 pub mod discretize;
 pub mod filters;
+#[cfg(feature = "fixed_point")]
+pub mod fixed_point;
 pub mod frequency_domain;
 pub mod linearization;
 pub mod matrix;

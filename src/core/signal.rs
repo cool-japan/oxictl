@@ -1,12 +1,12 @@
-use crate::core::scalar::ControlScalar;
+use crate::core::scalar::PidScalar;
 
 /// A desired target value for the controller.
 #[derive(Debug, Clone, Copy)]
-pub struct Setpoint<S: ControlScalar> {
+pub struct Setpoint<S: PidScalar> {
     value: S,
 }
 
-impl<S: ControlScalar> Setpoint<S> {
+impl<S: PidScalar> Setpoint<S> {
     pub fn new(value: S) -> Self {
         Self { value }
     }
@@ -18,11 +18,11 @@ impl<S: ControlScalar> Setpoint<S> {
 
 /// A measured process variable (feedback signal).
 #[derive(Debug, Clone, Copy)]
-pub struct Feedback<S: ControlScalar> {
+pub struct Feedback<S: PidScalar> {
     value: S,
 }
 
-impl<S: ControlScalar> Feedback<S> {
+impl<S: PidScalar> Feedback<S> {
     pub fn new(value: S) -> Self {
         Self { value }
     }
@@ -34,12 +34,12 @@ impl<S: ControlScalar> Feedback<S> {
 
 /// The output of a controller (manipulated variable).
 #[derive(Debug, Clone, Copy)]
-pub struct ControlOutput<S: ControlScalar> {
+pub struct ControlOutput<S: PidScalar> {
     value: S,
     saturated: bool,
 }
 
-impl<S: ControlScalar> ControlOutput<S> {
+impl<S: PidScalar> ControlOutput<S> {
     pub fn new(value: S) -> Self {
         Self {
             value,

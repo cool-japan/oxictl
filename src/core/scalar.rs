@@ -1,6 +1,66 @@
 use core::fmt;
 use num_traits::Float;
 
+/// Minimal scalar trait for PID-style control algorithms.
+/// Supports both floating-point (`f32`, `f64`) and fixed-point types.
+/// Types satisfying `ControlScalar` automatically satisfy `PidScalar`
+/// via the blanket impl below.
+///
+/// Algorithms requiring `sin`/`cos`/`exp`/`sqrt` must use `ControlScalar`.
+/// This trait covers only the arithmetic needed by PID, derivative filtering,
+/// and anti-windup logic.
+pub trait PidScalar:
+    core::ops::Add<Output = Self>
+    + core::ops::Sub<Output = Self>
+    + core::ops::Mul<Output = Self>
+    + core::ops::Div<Output = Self>
+    + core::ops::Neg<Output = Self>
+    + core::cmp::PartialOrd
+    + core::marker::Copy
+    + core::fmt::Debug
+    + 'static
+{
+    const ZERO: Self;
+    const ONE: Self;
+    /// Smallest representable positive value; used as division guard and
+    /// saturation-detection threshold.
+    const EPSILON: Self;
+
+    /// Construct from a 32-bit integer (exact where representable).
+    fn from_int(v: i32) -> Self;
+
+    /// Absolute value.
+    fn abs(self) -> Self;
+
+    /// Clamp to `[min, max]`.
+    fn clamp_pid(self, min: Self, max: Self) -> Self {
+        if self < min {
+            min
+        } else if self > max {
+            max
+        } else {
+            self
+        }
+    }
+}
+
+/// Every `ControlScalar` type (f32, f64) automatically satisfies `PidScalar`.
+impl<T: ControlScalar> PidScalar for T {
+    const ZERO: Self = <T as ControlScalar>::ZERO;
+    const ONE: Self = <T as ControlScalar>::ONE;
+    const EPSILON: Self = <T as ControlScalar>::EPSILON;
+
+    #[inline]
+    fn from_int(v: i32) -> Self {
+        T::from_f64(v as f64)
+    }
+
+    #[inline]
+    fn abs(self) -> Self {
+        <Self as num_traits::Float>::abs(self)
+    }
+}
+
 /// Trait abstracting numeric types used in control computations.
 /// Supports f32 and f64, enabling compile-time selection of precision.
 pub trait ControlScalar:

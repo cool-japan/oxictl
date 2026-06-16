@@ -1,5 +1,8 @@
 # OxiCtl Development TODO
 
+**Current Release: v0.1.1 — 2026-06-16**
+**Status: All phases complete (321 items ✅)**
+
 ## Phase 1: PID + Safety + Simulation ✅ COMPLETE
 
 - [x] Project scaffold (Cargo.toml, directory structure)
@@ -456,5 +459,178 @@ Verification: 2586 tests passing, 0 failing | SLoC: 77,783 (tokei src/) | 418 Ru
 
 ## Future / Backlog
 
-- [ ] f32 fixed-point via `fixed` crate
-- [ ] ROS2 bridge (full DDS transport)
+- [x] f32 fixed-point via `fixed` crate (planned 2026-04-27)
+  - **Goal:** First-class fixed-point arithmetic alongside existing f32/f64 support so PID-style control loops can run on cost-sensitive MCUs without an FPU. Default features stay Pure Rust float; fixed-point is opt-in via a `fixed_point` feature flag. Selected algorithms (PID standard, derivative_filter, anti_windup) gain fixed-point genericity in this phase.
+  - **Design:**
+    - **Dependency.** Add `fixed` (latest stable on crates.io). no_std-friendly, Pure Rust.
+    - **Feature flag.** New `fixed_point` Cargo feature, default off. Compiles in all four matrix points: `default`, `+fixed_point`, `+std+fixed_point`, `no_std+fixed_point`.
+    - **Trait direction.** Introduce narrower `PidScalar` trait in `src/core/scalar.rs`: `Add+Sub+Mul+Neg+Copy+Debug+PartialOrd` + `from_int(i32)` + `saturating_{add,sub,mul}`. Blanket impl `impl<T: ControlScalar> PidScalar for T {}`. Fixed-point types implement `PidScalar` directly (not `ControlScalar`, which requires `Float`).
+    - **Module layout.** New `src/core/fixed_point/`: `mod.rs`, `types.rs` (Q-format aliases Q15_16, Q1_31, Q3_29, Q7_24, Q31), `ops.rs` (saturating arithmetic, safe_div returning Result), `convert.rs` (from_f32_saturating, to_f32, from_int), `scalar_impl.rs` (PidScalar impls for each Q-format), `tests.rs` (unit tests).
+    - **Algorithms made fixed-point-eligible this phase:** `pid::standard::Pid`, `pid::derivative_filter`, `pid::anti_windup` — bound relaxed from `ControlScalar` to `PidScalar`. Blanket impl ensures existing callers are unaffected.
+    - **Explicitly out of scope:** any algorithm calling sin/exp/sqrt/log/tan/atan2 on the scalar (state-space, KF/EKF, filters, FOC, flatness, etc.).
+    - **Example:** `examples/fixed_point_pid.rs` — first-order plant with Q15_16 PID step response, asserts convergence.
+  - **Files:**
+    - new: `src/core/fixed_point/{mod,types,ops,convert,scalar_impl,tests}.rs`
+    - new: `examples/fixed_point_pid.rs`
+    - new: `tests/fixed_point_validation/{mod,pid_step_response,saturation,roundtrip}.rs`
+    - modified: `Cargo.toml` (dep + feature + example/test gating)
+    - modified: `src/core/mod.rs`, `src/lib.rs`
+    - modified: `src/core/scalar.rs` (new `PidScalar` trait + blanket impl)
+    - modified: `src/pid/standard.rs`, `src/pid/derivative_filter.rs`, `src/pid/anti_windup.rs`
+  - **Prerequisites:** Baseline green (cargo nextest --all-features + cargo clippy --all-features) before any code change.
+  - **Tests:**
+    - unit: round-trip f32 ↔ Q15_16; saturating add/sub at bounds; mul precision; div-by-zero returns Err; from_int for all Q-formats.
+    - integration: PID step-response in Q15_16 matches f32 reference within 1% RMS error.
+    - property (proptest): for random seeds in [-0.5, 0.5] Q15_16, (a+b)-b ≈ a within ULP; mul commutativity within saturation bounds.
+  - **Risk:** Trait bound ripple (mitigated by blanket impl). Feature-gating: run all four feature combos. libm interop: float-only ops excluded from scope. No unwrap() in production code.
+- [x] ROS2 bridge (full DDS transport) (completed 2026-04-28 — 8/8 DDS phases shipped)
+- [x] Phase 23 — DDS user API (completed 2026-04-28 — Publisher<T>/Subscription<T>/Participant on top of full Phase 22 stack)
+
+
+## Proposed follow-ups
+
+### DDS transport — Phase decomposition (replaces: "ROS2 bridge (full DDS transport)")
+
+The original ROS2 DDS item is vague (RTPS spec edition, QoS profile, transport choice, and target ROS2 distro are all undecided). It is decomposed into approvable phases. Pick one or more on the next `/ultra` run.
+Open questions before any phase runs: (1) RTPS spec edition: 2.3 (broad compat) or 2.5 (latest)? (2) QoS coverage: ROS2-default profile only, or full DDS profile set? (3) Transport: UDP-only, or also SHM for intra-host? (4) Target ROS2 distro: Humble (LTS), Iron, or Jazzy?
+
+- [x] Phase 22.1 — RTPS 2.3 wire-protocol foundation: zero-alloc no_std parser+serializer for the RTPS message format (planned 2026-04-27)
+  - **Goal:** Complete, zero-allocation, no_std-compatible parser+serializer for RTPS 2.3 messages covering all 13 submessage kinds (DATA, DATA_FRAG, HEARTBEAT, HEARTBEAT_FRAG, ACKNACK, NACK_FRAG, GAP, INFO_TS, INFO_DST, INFO_SRC, INFO_REPLY, INFO_REPLY_IP4, PAD), ParameterList (40+ PID constants), and all RTPS primitive types. New `dds` feature, default off.
+  - **Design:** `src/protocol/dds/` module — 21 files, all ≤ 400 lines, ~3000 LoC. Feature: `dds = ["protocol"]`. Zero-alloc parser borrows into input slice (`Message<'a>`); serializer writes to caller `&mut [u8]`. No modifications to `cdr_ser.rs`. Manual Display for RtpsError (no_std compatible). heapless::Vec<Submessage, 64> + heapless::Vec<Parameter, 32>.
+  - **Files:** new `src/protocol/dds/{mod,error,byte_cursor,parser,serializer,tests}.rs` + `types/{mod,guid,locator,sequence,fragment,time,parameter}.rs` + `message/{mod,header}.rs` + `message/submessage/{mod,data,heartbeat,acknack,gap,info}.rs`; modified `Cargo.toml`, `src/protocol/mod.rs`.
+  - **Tests:** 25+ unit tests: round-trip per submessage (13), header validation, truncated-buffer errors, endianness, SequenceNumberSet bitmap, ParameterList sentinel, structural fixture from spec bytes.
+- [x] Phase 22.2 — UDPv4 transport with locator routing (dds-transport feature; std-only; TransportConfig, UdpTransport, port helpers, Locator↔SocketAddr conversion, loopback round-trip test).
+- [x] Phase 22.3 — SPDP participant discovery (ParticipantBuiltinTopicData CDR encode/decode, SpdpParticipant beacon send/recv, discovered participant list with upsert; loopback test)
+- [x] Phase 22.4 — SEDP endpoint discovery (PublicationBuiltinTopicData + SubscriptionBuiltinTopicData CDR encode/decode with CDR strings, 5 QoS policies, SedpParticipant announce/discover, loopback tests)
+- [x] Phase 22.5 — Best-effort StatelessWriter / StatelessReader (HistoryCache, fire-and-forget DATA delivery, no ACK needed).
+- [x] Phase 22.6 — Reliable StatefulWriter / StatefulReader (heartbeat/ACK/NACK cycle, sequence number tracking, retransmit queue).
+- [x] Phase 22.7 — QoS policy matching (Reliability, History, Durability, Deadline, Liveliness — at minimum the ROS2-default profile).
+- [x] Phase 22.8 — ROS2 builtin entity wiring (rt/Parameter, /rosout topic, namespace-prefixed topic name encoding, builtin endpoint set).
+
+### DDS QoS extended policies
+
+- [x] Phase 22.9 — Remaining DDS QoS wire-format types (Lifespan, Ownership, OwnershipStrength, DestinationOrder, ResourceLimits) + extended matcher (planned 2026-04-28)
+
+### `#[allow(...)]` suppression cleanup
+
+Six policy-violating `#[allow]` attributes exist in src/ and must be fixed (root cause, not silenced). The `lss.rs:22` module-wide `#[allow(unused)]` may indicate incomplete CANopen LSS scope.
+
+- [x] Remove `#[allow(dead_code)]` in `src/core/filters/chebyshev.rs:183` — make code reachable or delete it.
+- [x] Remove `#[allow(dead_code)]` in `src/estimator/fixed_interval_smoother.rs:127` — make code reachable or delete it.
+- [x] Remove `#[allow(dead_code)]` in `src/state_feedback/integral_sliding_mode.rs:283` — make code reachable or delete it.
+- [x] Remove module-wide `#[allow(unused)]` in `src/protocol/canopen/lss.rs:22` — investigate for incomplete LSS Protocol scope before deleting.
+- [x] Remove `#[allow(dead_code)]` in `src/protocol/canopen/lss.rs:241` — make code reachable or delete it.
+- [x] Remove `#[allow(dead_code)]` in `src/mpc/linear_mpc.rs:300` — make code reachable or delete it.
+
+### Audit completion + baseline verification
+
+- [x] Verify zero `unimplemented!()` / `todo!()` macros exist in src/.
+- [x] Verify `cargo check --all-features` is green at HEAD.
+- [x] Verify `cargo clippy --all-features --all-targets -- -D warnings` is green at HEAD (no-warnings policy hard gate; must be 0 warnings and 0 errors).
+
+## Phase 23 — High-level DDS User API (`dds-api` feature) ✅ COMPLETE (2026-04-28)
+
+- [x] Phase 23.1 — `DdsType` trait: `serialize(&self, buf: &mut [u8]) -> Result<usize, DdsApiError>` + `deserialize(payload: &[u8]) -> Result<Self, DdsApiError>` + `TYPE_NAME: &'static str`.
+- [x] Phase 23.2 — `Sample<T>`: thin wrapper with `data: T` + `writer_guid_bytes: [u8; 16]`.
+- [x] Phase 23.3 — `EntityIdAllocator`: process-global `AtomicU32` counter, `next_writer()` / `next_reader()` yielding distinct entity kinds.
+- [x] Phase 23.4 — `DdsApiError`: unified error enum wrapping `StatefulError`, `DiscoveryError`, `TransportError`, `RtpsError` plus CDR-specific variants.
+- [x] Phase 23.5 — `builtin_impls`: CDR LE encapsulation header helpers; `DdsType` impls for `heapless::String<256>`, `LogOwned`, `ParameterEventOwned`.
+- [x] Phase 23.6 — `WriterEntry` / `Publisher<T>`: ephemeral UDP socket, `PublicationBuiltinTopicData`, typed `publish` method.
+- [x] Phase 23.7 — `ReaderEntry` / `Subscription<T>`: ephemeral UDP socket, `SubscriptionBuiltinTopicData`, fixed-depth `raw_queue`, typed `take` method.
+- [x] Phase 23.8 — `Participant`: SEDP metatraffic transport, explicit `add_peer`, `create_publisher`, `create_subscription`, `publish`, `take`, `spin_once` (announce → SEDP recv → match → heartbeat → recv data).
+- [x] Phase 23.9 — Integration tests: 5 tests (`participant_create_and_peer_registration`, `cdr_string_dds_type_roundtrip`, `log_owned_roundtrip`, `publisher_subscription_create`, `end_to_end_publish_subscribe`) — all passing.
+- [x] Bugfix: CDR encapsulation endianness detection in `make_cursor` (byte 1 bit-0 set → LE, not BE).
+  - **Feature gate:** `dds-api = ["dds-ros2"]`
+  - **Files:** `src/protocol/dds/api/{mod,error,dds_type,entity_id,builtin_impls,publisher,subscription,participant}.rs`; `tests/dds_api_integration/main.rs`
+  - **Tests:** 5 integration tests + 2772 total tests passing, 0 failing; clippy clean.
+
+## Phase 24 — DDS Production-Readiness (planned 2026-04-28)
+
+- [x] Phase 24A — ROS2 standard message TypeSupport catalog (planned 2026-04-28)
+  - **Goal:** `DdsType` impls for 35 ROS2 standard messages — `builtin_interfaces`, `std_msgs`, `geometry_msgs`, `sensor_msgs` — CDR-correct and TYPE_NAME-exact for rosidl interop.
+  - **Design:** New `src/protocol/dds/ros2/msgs/` module (5 files) gated on existing `dds-api` feature. Hand-rolled CDR serialize/deserialize with alignment, 4-byte encapsulation header `[0x00,0x01,0x00,0x00]`, `derive(Default,Clone,Debug,PartialEq)` on every type. `TYPE_NAME` in form `<pkg>::msg::dds_::<Type>_`. Re-exported from `ros2/mod.rs`.
+  - **Files:** `src/protocol/dds/ros2/msgs/mod.rs`, `builtin_interfaces.rs`, `std_msgs.rs`, `geometry_msgs.rs`, `sensor_msgs.rs` (new); `src/protocol/dds/ros2/mod.rs` (modified).
+  - **Tests:** ≥70 unit tests (round-trip + TYPE_NAME literal + 5 byte-layout + 1 overflow).
+  - **Risk:** CDR alignment errors — mitigated by byte-exact layout tests.
+
+- [x] Phase 24B — Multicast SPDP + auto-discovery in Participant (planned 2026-04-28)
+  - **Goal:** `Participant::new(domain_id, guid_prefix, qos)` auto-joins SPDP multicast `239.255.0.1:(7400+250*domain)`, sends periodic beacons, auto-discovers peers — no `add_peer` required for in-domain peers.
+  - **Design:** Add `socket2 = "0.5"` dep (gated on `dds-transport`). New `transport/multicast_socket.rs` with `bind_multicast_reuse(port,group)` using SO_REUSEADDR+SO_REUSEPORT. `Participant` gains `spdp: SpdpParticipant`, `domain_id`, `last_beacon_at`, `auto_discovered_peers` fields. `spin_once` drives SPDP+auto-peer-promotion. Signature changes from `new(GuidPrefix,QosProfile)` to `new(domain_id,GuidPrefix,QosProfile)`.
+  - **Files:** `src/protocol/dds/transport/multicast_socket.rs` (new); `Cargo.toml`, `transport/mod.rs`, `transport/udp.rs`, `discovery/spdp.rs`, `api/participant.rs`, `tests/dds_api_integration/main.rs` (modified).
+  - **Tests:** 4 inline unit tests + 1 multicast integration test (domain 99, `#[ignore]` on non-Linux).
+  - **Risk:** macOS multicast loopback — mitigated by explicit `set_multicast_loop_v4(true)` + `#[ignore]` gate.
+
+- [x] Phase 24C — Concrete dds-api examples (planned 2026-04-28)
+  - **Goal:** 3 executable examples: `ros2_chatter` (std_msgs), `ros2_imu_publisher` (sensor_msgs::Imu from estimator), `ros2_twist_subscriber` (geometry_msgs::Twist driving a sim).
+  - **Design:** Self-contained loopback examples using two `Participant`s per process. Demonstrate TypeSupport catalog + typical control-system integration pattern.
+  - **Files:** `examples/ros2_chatter.rs`, `examples/ros2_imu_publisher.rs`, `examples/ros2_twist_subscriber.rs` (new); `Cargo.toml` (3 `[[example]]` entries).
+  - **Tests:** All three examples compile under `--all-features`.
+  - **Risk:** sim type API mismatch — subagent reads actual types first.
+
+- [x] Phase 24 — DDS production-readiness (completed 2026-04-28 — ROS2 message TypeSupport catalog (35 types) + multicast SPDP auto-discovery + 3 concrete examples)
+
+## Phase 25 — ROS2 Services & Actions over DDS
+
+- [x] Phase 25.1 — topic_naming.rs: fix service type-name suffix + add action naming (planned 2026-06-13)
+  - **Goal:** Request/reply topic + type names exactly match rmw conventions; action topic/type naming supported.
+  - **Design:** In `topic_naming.rs`: rename `TypeSuffix::Reply → TypeSuffix::Response`, map to `"_Response"` (keep `Plain`/`Request`). Add `TypeNamespace::Action => "action"`. Add `ActionSubtopic::{Feedback,Status}` + `encode_action_subtopic(out, action_name, sub)` producing `rt/<action>/_action/{feedback,status}`. Action *services* reuse the existing `encode_topic_name("<action>/_action/send_goal", ServiceRequest)` → `rq/<action>/_action/send_goalRequest`. `decode_topic_name` unchanged.
+  - **Files:** `src/protocol/dds/ros2/topic_naming.rs`; re-export new `ActionSubtopic`/`encode_action_subtopic` in `src/protocol/dds/ros2/mod.rs` + `src/protocol/dds/mod.rs`.
+  - **Prerequisites:** none (root of dependency tree).
+  - **Tests:** `encode_type_name_srv_response`; `encode_action_type_send_goal_request`; `encode_action_subtopic_feedback`; `encode_action_subtopic_status`; `encode_service_subtopic_send_goal_request`.
+  - **Risk:** TypeSuffix::Reply rename — no test asserts `_Reply_` type path; safe.
+
+- [x] Phase 25.2 — SampleIdentity + request-header CDR codec (planned 2026-06-13)
+  - **Goal:** Wire primitive for request/reply correlation, embedded at the front of the CDR body.
+  - **Design:** `pub struct SampleIdentity { pub writer_guid: [u8;16], pub sequence_number: i64 }` (Copy/Eq). `serialize_inner`: 16 guid bytes + i64 LE (24 bytes total, 8-aligned). `deserialize_inner`: read 16 bytes + read_i64. Header seq is plain CDR int64 LE, NOT the RTPS SequenceNumber form.
+  - **Files:** `src/protocol/dds/api/service/sample_identity.rs` (new).
+  - **Prerequisites:** none.
+  - **Tests:** `sample_identity_round_trip`; `sample_identity_wire_size` (body==24); `sample_identity_guid_bytes_order`.
+  - **Risk:** CDR-int64 vs RTPS-SequenceNumber confusion — wire-size test pins it.
+
+- [x] Phase 25.3 — ServiceClient<S> + Service/ServiceField traits + wrappers + reply filtering (planned 2026-06-13)
+  - **Goal:** Type-safe client that sends Req and correlates Rep, robust to broadcast replies.
+  - **Design:** Traits `ServiceField { serialize_inner/deserialize_inner }` and `Service { type Request: ServiceField; type Response: ServiceField; const REQUEST_TYPE_NAME; const RESPONSE_TYPE_NAME }`. Generic adapters `RequestWrapper<T>`/`ReplyWrapper<T>` implement `DdsType` composing SampleIdentity header + body `_inner`. `ServiceClient<S>` owns request Publisher, reply Subscription, `my_request_writer_guid: [u8;16]`, `next_request_seq: i64`, pending `heapless::Vec<i64,16>`. `send_request` assigns seq, wraps, publishes. `take_responses` filters by writer_guid.
+  - **Files:** `src/protocol/dds/api/service/{mod,wrappers,client}.rs` (new).
+  - **Prerequisites:** 25.1, 25.2.
+  - **Tests:** `request_wrapper_round_trip`; `client_seq_monotonic`; `reply_filter_rejects_foreign_guid`.
+  - **Risk:** Cap pending at 16 with oldest-eviction.
+
+- [x] Phase 25.4 — ServiceServer<S> + Participant service plumbing (planned 2026-06-13)
+  - **Goal:** Server receives requests, runs a callback, broadcasts correlated replies; Participant glue.
+  - **Design:** `ServiceServer<S>` owns request Subscription + reply Publisher. `process<F: FnMut(&S::Request)->S::Response>` takes requests, calls handler, publishes ReplyWrapper with echoed SampleIdentity. Free fns `service::create_client`/`create_server`. Add `Participant::publisher_guid<T>(&self,&Publisher<T>)->Option<[u8;16]>`.
+  - **Files:** `src/protocol/dds/api/service/server.rs` (new); `api/service/mod.rs`; `api/participant.rs` (accessor); `api/mod.rs` (re-export).
+  - **Prerequisites:** 25.1, 25.2, 25.3.
+  - **Tests:** Integration target `tests/dds_service_integration/main.rs`: `add_two_ints_request_reply`; `two_clients_no_cross_talk`; `server_handles_multiple_sequential`; `unmatched_service_no_reply`.
+  - **Risk:** participant.rs edit — confine to Wave 0.
+
+- [x] Phase 25.5 — srv message catalog: AddTwoInts + action_msgs (planned 2026-06-13)
+  - **Goal:** Concrete request/response field structs + Service impls + standard action support messages.
+  - **Design:** `example_interfaces` AddTwoInts Request/Response + Service impl. `action_msgs`: GoalInfo, GoalStatus (constants UNKNOWN=0..ABORTED=6), GoalStatusArray, CancelGoal Request/Response. Sequences follow JointState pattern.
+  - **Files:** `src/protocol/dds/ros2/msgs/example_interfaces.rs`, `action_msgs.rs` (new); `msgs/mod.rs` + `ros2/mod.rs` re-exports.
+  - **Prerequisites:** 25.1, 25.3.
+  - **Tests:** round-trips; `goal_status_constants`; `goal_status_array_byte_layout`; type-name tests.
+  - **Risk:** Sequence-of-nested-struct alignment — model on JointState.
+
+- [x] Phase 25.6 — unique_identifier_msgs/UUID + GoalId helper (planned 2026-06-13)
+  - **Goal:** 16-raw-byte goal identifier used throughout actions.
+  - **Design:** `pub struct Uuid { pub uuid: [u8;16] }`. `serialize_inner`: `write_bytes(&uuid)` (fixed octet array, NO length prefix). `TYPE_NAME="unique_identifier_msgs::msg::dds_::UUID_"`. `Uuid::nil()`, `Uuid::from_bytes([u8;16])`.
+  - **Files:** `src/protocol/dds/ros2/msgs/unique_identifier_msgs.rs` (new); `msgs/mod.rs` + `ros2/mod.rs` re-exports.
+  - **Prerequisites:** none.
+  - **Tests:** `uuid_round_trip`; `uuid_wire_size` (body==16, no prefix); `uuid_type_name`.
+  - **Risk:** Mistaken 4-byte length prefix — explicit wire-size test.
+
+- [x] Phase 25.7 — ActionServer<A> / ActionClient<A> + Fibonacci action (planned 2026-06-13)
+  - **Goal:** Full ROS2 action orchestration on top of services + pub/sub.
+  - **Design:** `trait Action { type Goal: ServiceField; type Result: ServiceField; type Feedback: DdsType+Clone; const ACTION_NAME_TYPE_PREFIX }`. ActionServer = 3 ServiceServers + 2 Publishers (feedback, status). ActionClient mirrors. Fibonacci example action. `heapless::Vec<(Uuid,i8)>` active goals.
+  - **Files:** `src/protocol/dds/api/action/{mod,server,client}.rs`; `ros2/msgs/example_interfaces_action.rs` (new); re-exports in `api/mod.rs`, `ros2/mod.rs`, `msgs/mod.rs`.
+  - **Prerequisites:** 25.1–25.6.
+  - **Tests:** Integration target `tests/dds_action_integration/main.rs`: `fibonacci_goal_accept_and_result`; `feedback_flows_to_client`; `status_array_reflects_lifecycle`; `cancel_goal_marks_canceling`; `two_action_clients_isolated`.
+  - **Risk:** get_result flakiness → handler drives goal terminal deterministically.
+
+- [x] Phase 25.8 — docs + re-export audit + clippy/no_std/test sweep (planned 2026-06-13)
+  - **Goal:** Ship-quality: consistent public surface, zero warnings, no_std-clean codecs, green workspace.
+  - **Design:** Module docs on service/mod.rs + action/mod.rs. Audit no unwrap() outside #[cfg(test)]. Batch all pub use additions. Add [[test]] entries in Cargo.toml gated on dds-api feature.
+  - **Files:** `api/mod.rs`, `dds/mod.rs`, `ros2/mod.rs`, `msgs/mod.rs`, `Cargo.toml`.
+  - **Prerequisites:** 25.1–25.7.
+  - **Tests:** cargo clippy --all-features --all-targets -- -D warnings clean; cargo nextest run --all-features green; `service_module_reexports_present` compile-test.
+  - **Risk:** File-size creep — split if >2000 lines.

@@ -5,6 +5,27 @@ All notable changes to oxictl will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-06-16
+
+### Added
+- Phase 23: High-level DDS user API (`dds-api` feature) — `Participant`, `Publisher<T>`, `Subscription<T>`, `DdsType` trait, `Sample<T>`, `EntityIdAllocator`, `LogOwned`, `ParameterEventOwned`
+- CDR string helpers promoted to public API: `ByteWriter::write_cdr_string`, `ByteCursor::read_cdr_string`
+- `IncomingResult` re-exported from `discovery::` public API
+- 5 integration tests in `tests/dds_api_integration/`
+- Phase 22 (22.1–22.9): Complete RTPS 2.3 / DDS stack — transport, SPDP/SEDP discovery, QoS matching, stateless/stateful endpoints, ROS2 CDR bridge
+- ROS2 Service layer (`dds-api` feature): `ServiceClient<S>` and `ServiceServer<S>` — ROS2-compatible request/reply over DDS; `create_client` and `create_server` factory functions; `SampleIdentity` for correlating request/response pairs
+- 4 integration tests in `tests/dds_service_integration/` (add_two_ints, two_clients_no_cross_talk, server_handles_multiple_sequential, unmatched_service_no_reply)
+- ROS2 Action layer (`dds-api` feature): `ActionClient<A>`, `ActionServer<A>`, `ActionHandler<A>` — ROS2 Action protocol (goal/feedback/result/cancel); `create_action_client` and `create_action_server` factory functions
+- 5 integration tests in `tests/dds_action_integration/` (fibonacci_goal_accept_and_result, feedback_flows_to_client, status_array_reflects_lifecycle, cancel_goal_marks_canceling, two_action_clients_isolated)
+- New ROS2 message types (`dds-api` feature): `unique_identifier_msgs::Uuid` (16-byte fixed array); `action_msgs::{GoalInfo, GoalStatus, GoalStatusArray, CancelGoal}` with goal_status constants; `example_interfaces::{AddTwoIntsRequest, AddTwoIntsResponse}` (AddTwoInts service); `example_interfaces_action::{FibonacciGoal, FibonacciResult, FibonacciFeedback}` (Fibonacci action)
+- Examples: `ros2_chatter` (Publisher/Subscription with StdString on `rt/chatter`, in-process loopback via explicit `add_peer`), `ros2_imu_publisher` (Publisher/Subscription with `sensor_msgs::Imu` at simulated 100 Hz), `ros2_twist_subscriber` (Publisher/Subscription with `geometry_msgs::Twist`, integrates unicycle model), `fixed_point_pid` (PID controller with Q15.16 fixed-point arithmetic)
+
+### Changed
+- Promoted `write_param_string` / `read_param_cdr_string` CDR helpers from private to public in `byte_cursor.rs`
+- Fixed-point PID support via `PidScalar` trait (`fixed_point` feature)
+- Internal DDS stack cleanup and robustness improvements across RTPS transport, SPDP/SEDP discovery, stateless/stateful endpoints, CDR codec, and QoS handling
+- `proptest` updated from 1.8 to 1.11
+
 ## [0.1.0] - 2026-03-09
 
 ### Added
@@ -48,3 +69,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `no_std` compatible throughout (using `libm`, `heapless`, `core`)
 
 [0.1.0]: https://github.com/cool-japan/oxictl/releases/tag/v0.1.0
+[0.1.1]: https://github.com/cool-japan/oxictl/compare/v0.1.0...v0.1.1

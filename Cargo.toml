@@ -1,9 +1,12 @@
 [package]
 name = "oxictl"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 rust-version = "1.75"
 description = "Pure Rust Real-Time Control Systems Framework"
+authors = ["COOLJAPAN OU (Team Kitasan)"]
+documentation = "https://docs.rs/oxictl"
+homepage = "https://github.com/cool-japan/oxictl"
 license = "Apache-2.0"
 repository = "https://github.com/cool-japan/oxictl"
 readme = "README.md"
@@ -55,16 +58,26 @@ data_driven = []
 antiwindup = []
 hybrid = []
 koopman = []
+fixed_point = ["dep:fixed"]
+dds = ["protocol"]
+dds-transport = ["dds", "dep:socket2"]
+dds-discovery = ["dds-transport"]
+dds-stateless = ["dds-transport"]
+dds-stateful = ["dds-stateless"]
+dds-ros2 = ["dds-stateful", "dds-discovery"]
+dds-api = ["dds-ros2"]
 
 [dependencies]
 heapless = "0.9"
 libm = "0.2"
 num-traits = { version = "0.2", default-features = false, features = ["libm"] }
 thiserror = { version = "2.0", optional = true }
+fixed = { version = "1.31", optional = true }
+socket2 = { version = "0.6", optional = true, features = ["all"] }
 
 [dev-dependencies]
 criterion = "0.8"
-proptest = "1.8"
+proptest = "1.11"
 approx = "0.5"
 
 [[example]]
@@ -203,6 +216,37 @@ required-features = ["hybrid"]
 name = "antiwindup_demo"
 required-features = ["antiwindup"]
 
+[[example]]
+name = "fixed_point_pid"
+required-features = ["fixed_point", "pid"]
+
+[[example]]
+name = "ros2_chatter"
+required-features = ["dds-api"]
+
+[[example]]
+name = "ros2_imu_publisher"
+required-features = ["dds-api"]
+
+[[example]]
+name = "ros2_twist_subscriber"
+required-features = ["dds-api"]
+
+[[test]]
+name = "dds_api_integration"
+path = "tests/dds_api_integration/main.rs"
+required-features = ["dds-api"]
+
+[[test]]
+name = "dds_service_integration"
+path = "tests/dds_service_integration/main.rs"
+required-features = ["dds-api"]
+
+[[test]]
+name = "dds_action_integration"
+path = "tests/dds_action_integration/main.rs"
+required-features = ["dds-api"]
+
 [[test]]
 name = "frequency_domain_validation"
 path = "tests/frequency_domain_validation/main.rs"
@@ -217,6 +261,11 @@ required-features = ["fuzzy"]
 name = "optimal_validation"
 path = "tests/optimal_validation/main.rs"
 required-features = ["optimal"]
+
+[[test]]
+name = "fixed_point_validation"
+path = "tests/fixed_point_validation/main.rs"
+required-features = ["fixed_point", "pid"]
 
 [[bench]]
 name = "pid_bench"
