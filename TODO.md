@@ -1,6 +1,6 @@
 # OxiCtl Development TODO
 
-**Current Release: v0.1.1 — 2026-06-16**
+**Current Release: v0.1.2 — Unreleased**
 **Status: All phases complete (321 items ✅)**
 
 ## Phase 1: PID + Safety + Simulation ✅ COMPLETE

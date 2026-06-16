@@ -12,7 +12,7 @@
 
 | Metric | Value |
 |--------|-------|
-| Version | 0.1.1 |
+| Version | 0.1.2 |
 | Tests | 2,909 passing |
 | Lines of Code | 102,351 |
 | Rust Files | 610 |
