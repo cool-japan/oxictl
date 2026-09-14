@@ -171,14 +171,14 @@ impl<S: ControlScalar> FluxEstimator<S> {
     pub fn flux_sector(&self) -> usize {
         let psi_a = self.psi_alpha.to_f64();
         let psi_b = self.psi_beta.to_f64();
-        let angle = psi_b.atan2(psi_a);
+        let angle = libm::atan2(psi_b, psi_a);
         let angle = if angle < 0.0 {
             angle + 2.0 * core::f64::consts::PI
         } else {
             angle
         };
         let sector_width = core::f64::consts::FRAC_PI_3;
-        let sector = (angle / sector_width + 1e-12).floor() as usize;
+        let sector = libm::floor(angle / sector_width + 1e-12) as usize;
         (sector % 6) + 1
     }
 }

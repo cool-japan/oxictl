@@ -6,7 +6,6 @@
 //!
 //! Mode switching is gated by a minimum dwell-time constraint.
 //! An optional Lyapunov matrix P can be set for stability monitoring.
-#![cfg_attr(not(feature = "std"), no_std)]
 
 use crate::core::scalar::ControlScalar;
 

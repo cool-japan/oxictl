@@ -67,7 +67,7 @@ where
     let ht = h.transpose();
     let at = a.transpose();
     let mut neg_log_lik = S::ZERO;
-    let log2pi = S::from_f64(core::f64::consts::TAU.ln()); // ln(2π)
+    let log2pi = S::from_f64(libm::log(core::f64::consts::TAU)); // ln(2π)
 
     for k in 0..steps {
         // ── Predict ──────────────────────────────────────────────────────

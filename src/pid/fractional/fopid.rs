@@ -283,7 +283,7 @@ impl<S: ControlScalar> FopidAutoTune<S> {
         }
 
         // Number of steps in each dimension
-        let n_steps = ((hi - lo) / step).to_f64().ceil() as usize + 1;
+        let n_steps = libm::ceil(((hi - lo) / step).to_f64()) as usize + 1;
 
         let mut best_obj = S::from_f64(f64::MAX);
         let mut best_lambda = lo;

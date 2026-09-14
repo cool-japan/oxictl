@@ -264,7 +264,7 @@ fn normal_quantile_approx<S: ControlScalar>(p: S) -> S {
 
     // Abramowitz & Stegun §26.2.23 rational approximation for the upper tail
     let z = if p_f64 <= 0.5 {
-        let t = (-2.0 * p_f64.ln()).sqrt();
+        let t = libm::sqrt(-2.0 * libm::log(p_f64));
         let c0 = 2.515517_f64;
         let c1 = 0.802853_f64;
         let c2 = 0.010328_f64;
@@ -274,7 +274,7 @@ fn normal_quantile_approx<S: ControlScalar>(p: S) -> S {
         -(t - (c0 + c1 * t + c2 * t * t) / (1.0 + d1 * t + d2 * t * t + d3 * t * t * t))
     } else {
         let q_val = 1.0 - p_f64;
-        let t = (-2.0 * q_val.ln()).sqrt();
+        let t = libm::sqrt(-2.0 * libm::log(q_val));
         let c0 = 2.515517_f64;
         let c1 = 0.802853_f64;
         let c2 = 0.010328_f64;

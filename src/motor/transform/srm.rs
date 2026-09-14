@@ -80,7 +80,7 @@ impl<S: ControlScalar> SynRmController<S> {
         let i_axis = i_sq.max(S::ZERO).sqrt();
 
         // Clamp to i_max/√2 (so total Is = √(id²+iq²) ≤ i_max)
-        let inv_sqrt2 = S::from_f64(1.0 / 2.0_f64.sqrt());
+        let inv_sqrt2 = S::from_f64(1.0 / libm::sqrt(2.0));
         let i_axis_max = self.i_max * inv_sqrt2;
         let i_axis_clamped = i_axis.min(i_axis_max);
 

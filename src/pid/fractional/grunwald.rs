@@ -219,6 +219,7 @@ impl<S: ControlScalar, const N: usize> FracDifferentiator<S, N> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::vec::Vec;
 
     // -----------------------------------------------------------------------
     // Helper: run N updates with a constant input, return last output

@@ -67,7 +67,7 @@ pub struct DubinsPath<S: ControlScalar> {
 #[inline]
 fn mod2pi(theta: f64) -> f64 {
     let two_pi = core::f64::consts::PI * 2.0;
-    let v = theta - (theta / two_pi).floor() * two_pi;
+    let v = theta - libm::floor(theta / two_pi) * two_pi;
     if v < 0.0 {
         v + two_pi
     } else {
@@ -80,7 +80,7 @@ fn mod2pi(theta: f64) -> f64 {
 fn wrap_pi(theta: f64) -> f64 {
     let pi = core::f64::consts::PI;
     let two_pi = pi * 2.0;
-    let mut w = theta - (theta / two_pi).round() * two_pi;
+    let mut w = theta - libm::round(theta / two_pi) * two_pi;
     if w > pi {
         w -= two_pi;
     } else if w <= -pi {

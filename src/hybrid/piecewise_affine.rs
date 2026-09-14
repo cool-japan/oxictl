@@ -15,7 +15,6 @@
 //! A PWA controller implements per-region state-feedback:
 //!
 //!   u_i = -(K[r][i,:] · x)
-#![cfg_attr(not(feature = "std"), no_std)]
 
 use crate::core::scalar::ControlScalar;
 

@@ -12,8 +12,6 @@
 //! hypothesis `H₁: r ~ N(μ_fault, Σ)` against the null `H₀: r ~ N(0, Σ)`.
 //! Decisions are made when `Λ` crosses upper (`B`) or lower (`A`) boundaries.
 
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use crate::core::scalar::ControlScalar;
 use crate::fdi::parity_space::{FaultStatus, FdiError};
 

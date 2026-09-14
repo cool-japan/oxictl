@@ -21,13 +21,14 @@ repository = "https://github.com/cool-japan/oxictl"
 
 [features]
 default = ["std", "pid", "safety"]
-std = ["dep:thiserror"]
+std = ["alloc", "dep:thiserror"]
+alloc = []
 pid = []
 safety = []
 sim = ["std"]
 estimator = []
 state_feedback = ["estimator"]
-motor = []
+motor = ["pid"]
 scheduler = []
 adaptive = []
 trajectory = []
@@ -60,7 +61,7 @@ hybrid = []
 koopman = []
 fixed_point = ["dep:fixed"]
 dds = ["protocol"]
-dds-transport = ["dds", "dep:socket2"]
+dds-transport = ["dds", "std", "dep:socket2"]
 dds-discovery = ["dds-transport"]
 dds-stateless = ["dds-transport"]
 dds-stateful = ["dds-stateless"]
@@ -79,6 +80,7 @@ socket2 = { version = "0.6", optional = true, features = ["all"] }
 criterion = "0.8"
 proptest = "1.11"
 approx = "0.5"
+toml = "1.1"
 
 [[example]]
 name = "pid_temperature"
@@ -94,11 +96,11 @@ required-features = ["estimator", "sim"]
 
 [[example]]
 name = "mpc_inverted_pendulum"
-required-features = ["mpc", "state_feedback", "sim"]
+required-features = ["mpc", "sim"]
 
 [[example]]
 name = "ethercat_servo"
-required-features = ["protocol", "motor"]
+required-features = ["protocol"]
 
 [[example]]
 name = "safety_watchdog"
@@ -119,10 +121,6 @@ required-features = ["mpc"]
 [[example]]
 name = "multi_sensor_fusion"
 required-features = ["estimator"]
-
-[[example]]
-name = "bode_analysis"
-required-features = ["std"]
 
 [[example]]
 name = "fuzzy_temperature"
@@ -147,10 +145,6 @@ required-features = ["passivity"]
 [[example]]
 name = "dob_motor"
 required-features = ["disturbance"]
-
-[[example]]
-name = "lms_noise_cancel"
-required-features = ["std"]
 
 [[example]]
 name = "gp_learning"
@@ -248,9 +242,39 @@ path = "tests/dds_action_integration/main.rs"
 required-features = ["dds-api"]
 
 [[test]]
-name = "frequency_domain_validation"
-path = "tests/frequency_domain_validation/main.rs"
-required-features = ["std"]
+name = "step_response"
+path = "tests/step_response.rs"
+required-features = ["pid", "sim"]
+
+[[test]]
+name = "estimator_validation"
+path = "tests/estimator_validation/main.rs"
+required-features = ["estimator"]
+
+[[test]]
+name = "motor_validation"
+path = "tests/motor_validation/main.rs"
+required-features = ["motor"]
+
+[[test]]
+name = "mpc_validation"
+path = "tests/mpc_validation/main.rs"
+required-features = ["mpc"]
+
+[[test]]
+name = "pid_validation"
+path = "tests/pid_validation/main.rs"
+required-features = ["pid"]
+
+[[test]]
+name = "safety_validation"
+path = "tests/safety_validation/main.rs"
+required-features = ["safety"]
+
+[[test]]
+name = "issue_1_no_std"
+path = "tests/issue_1_no_std.rs"
+required-features = ["pid", "estimator", "motor", "trajectory"]
 
 [[test]]
 name = "fuzzy_validation"

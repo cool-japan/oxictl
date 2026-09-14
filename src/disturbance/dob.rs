@@ -218,6 +218,7 @@ impl<S: ControlScalar> DisturbanceObserver<S> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::vec::Vec;
 
     /// Helper: build a default valid config with order 1.
     fn cfg_order1() -> DisturbanceObserverConfig<f64> {

@@ -4,7 +4,6 @@
 //! Transitions between modes are governed by guard conditions (fn pointers).
 //! Optional reset maps can modify the state on transition.
 //! Minimum dwell time (in steps) is enforced before any transition is taken.
-#![cfg_attr(not(feature = "std"), no_std)]
 
 use core::mem::MaybeUninit;
 

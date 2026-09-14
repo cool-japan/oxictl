@@ -128,7 +128,8 @@ kf.update(&measurement)?;
 
 | Feature | Default | Requires `std` | Description |
 |---------|---------|---------------|-------------|
-| `std` | yes | — | Enables `thiserror`; required by `sim` |
+| `std` | yes | — | Enables `thiserror` and `alloc`; required by `sim`, `io` and `dds-transport` and above |
+| `alloc` | no (implied by `std`) | no | Heap-backed items on `no_std` + allocator targets (e.g. `estimator::ParticleFilter`) |
 | `pid` | yes | no | PID family (standard, cascade, fractional, …) |
 | `safety` | yes | no | Watchdog, fault handling, SIL, redundancy |
 | `sim` | no | yes | Simulation plant models |
@@ -190,7 +191,7 @@ cargo nextest run --all-features
 
 ## `no_std` Usage
 
-Most modules are `no_std` compatible. Only `sim` requires `std` (for file I/O in scope recorder).
+All feature-gated algorithm modules build with `default-features = false`, including on bare-metal targets such as `thumbv7em-none-eabihf`. Only `sim`, the `io` module (enabled by `std`) and the DDS networking features (`dds-transport`, `dds-discovery`, `dds-stateless`, `dds-stateful`, `dds-ros2`, `dds-api`) require `std`; enabling them turns `std` on. `estimator::ParticleFilter` needs a heap and is available with the `alloc` feature (no `std` required).
 
 ```toml
 [dependencies]
@@ -209,14 +210,14 @@ Internals use:
 | `pid_temperature` | `sim`, `pid`, `safety` | Closed-loop PID temperature regulation |
 | `foc_motor` | `motor`, `sim` | Field-oriented control for PMSM |
 | `kalman_tracking` | `estimator`, `sim` | Kalman filter position/velocity tracking |
-| `mpc_inverted_pendulum` | `mpc`, `state_feedback`, `sim` | Linear MPC for inverted pendulum |
-| `ethercat_servo` | `protocol`, `motor` | EtherCAT servo drive communication |
+| `mpc_inverted_pendulum` | `mpc`, `sim` | Linear MPC for inverted pendulum |
+| `ethercat_servo` | `protocol` | EtherCAT servo drive communication |
 | `safety_watchdog` | `safety` | Watchdog + fault handler demo |
 | `trajectory_planning` | `trajectory` | Bezier path planning |
 | `adrc_servo` | `state_feedback` | ADRC servo with ESO-based disturbance rejection |
 | `robust_mpc_pendulum` | `mpc` | Min-max robust MPC for uncertain pendulum |
 | `multi_sensor_fusion` | `estimator` | Information filter fusing 3 IMUs |
-| `bode_analysis` | `std` | Bode/Nyquist stability margins for lead-lag compensator |
+| `bode_analysis` | *(none)* | Bode/Nyquist stability margins for lead-lag compensator |
 | `fuzzy_temperature` | `fuzzy` | Mamdani fuzzy thermostat |
 | `geometric_attitude` | `geometric` | Geometric PD on SO(3) with disturbance torque |
 | `mppi_obstacle` | `mpc` | MPPI stochastic control for obstacle avoidance |

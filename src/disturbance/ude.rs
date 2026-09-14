@@ -165,6 +165,7 @@ impl<S: ControlScalar> UdeController<S> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::vec::Vec;
 
     /// Simulate the scalar plant y[k+1] = y[k] + dt·(a·y[k] + b·(u + d))
     fn simulate_plant(a: f64, b: f64, dt: f64, u: f64, d: f64, y0: f64, steps: usize) -> Vec<f64> {

@@ -6,7 +6,6 @@
 //! - [`quantizer`]: uniform, logarithmic, and dynamic (zoom) quantizers.
 //! - [`packet_dropout`]: Bernoulli and Markov packet-dropout models with ZOH.
 //! - [`time_delay`]: fixed ring-buffer delay and Padé delay approximation.
-#![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod packet_dropout;
 pub mod quantizer;

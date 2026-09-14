@@ -14,8 +14,6 @@
 // | Gradient ESC (2-input) | [`GradientEsc2D`] | O(1/k) |
 // | Newton ESC (SISO) | [`NewtonEsc`] | curvature-independent |
 
-#![cfg_attr(not(feature = "std"), no_std)]
-
 pub mod gradient_esc;
 pub mod newton_esc;
 

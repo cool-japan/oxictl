@@ -102,6 +102,7 @@ impl<S: ControlScalar> DualController<S> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::vec::Vec;
 
     #[test]
     fn test_no_probing_when_certain() {

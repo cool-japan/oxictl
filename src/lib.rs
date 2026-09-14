@@ -1,6 +1,11 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(rustdoc::broken_intra_doc_links)]
 
+// `alloc` backs the heap-using items behind the `alloc` feature; unit tests
+// also use it so they build in `no_std` configurations.
+#[cfg(any(feature = "alloc", test))]
+extern crate alloc;
+
 pub mod core;
 pub mod prelude;
 

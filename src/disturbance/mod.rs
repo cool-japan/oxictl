@@ -14,8 +14,6 @@
 //! - Generic over [`crate::core::scalar::ControlScalar`] (f32 / f64).
 //! - Free of `unwrap()` — all fallible operations return `Result`.
 
-#![cfg_attr(not(feature = "std"), no_std)]
-
 pub mod dob;
 pub mod ndob;
 pub mod ude;

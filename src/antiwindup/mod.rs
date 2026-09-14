@@ -1,4 +1,3 @@
-#![cfg_attr(not(feature = "std"), no_std)]
 //! Anti-Windup control structures.
 //!
 //! This module provides several anti-windup (AW) strategies for controllers

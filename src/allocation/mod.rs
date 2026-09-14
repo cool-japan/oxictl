@@ -1,4 +1,3 @@
-#![cfg_attr(not(feature = "std"), no_std)]
 //! Control Allocation module.
 //!
 //! Provides allocation strategies for over-actuated systems where M actuators

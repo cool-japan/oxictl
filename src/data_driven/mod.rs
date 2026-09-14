@@ -1,5 +1,3 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
 //! Data-driven control design methods.
 //!
 //! Provides algorithms that tune controllers directly from experimental

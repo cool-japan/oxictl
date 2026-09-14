@@ -255,6 +255,8 @@ pub fn smallest_of_maxima<S: ControlScalar>(mf_samples: &[(S, S)]) -> S {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::vec;
+    use alloc::vec::Vec;
 
     /// Build a symmetric triangular MF over [0, 10] centered at 5.
     fn symmetric_triangle_samples(n: usize) -> Vec<(f64, f64)> {

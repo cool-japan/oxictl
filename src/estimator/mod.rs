@@ -14,7 +14,7 @@ pub mod information_filter;
 pub mod kalman;
 pub mod marginalized_particle;
 pub mod observer;
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 pub mod particle;
 pub mod rts_smoother;
 pub mod sqrt_kalman;
@@ -39,7 +39,7 @@ pub use information_filter::{InfoFilterError, InformationFilter};
 pub use kalman::KalmanFilter;
 pub use marginalized_particle::{MarginalizedParticleFilter, MpfError};
 pub use observer::{DisturbanceObserver, LuenbergerObserver, SlidingModeObserver};
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 pub use particle::{gaussian_log_likelihood, ParticleFilter};
 pub use rts_smoother::{FilteredState, RtsSmoother, SmoothedData, SmoothedState, SmootherError};
 pub use sqrt_kalman::{SqrtKalman, SqrtKfError};

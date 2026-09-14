@@ -1,4 +1,3 @@
-#![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::needless_range_loop)]
 
 //! Virtual Reference Feedback Tuning (VRFT) — Campi & Savaresi 2002.

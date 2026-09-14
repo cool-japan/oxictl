@@ -111,7 +111,7 @@ pub fn overmodulate_mode2<S: ControlScalar>(alpha: S, beta: S, v_dc: S, mi: S) -
     // angle within a 60° sector is:
     //   r(θ') = (Vdc/2) * cos(30°) / cos(θ' mod 60° - 30°)
     //         = (Vdc/2) * √3/2 / cos(θ' - sector_mid)
-    let sqrt3_over2 = S::from_f64(3.0_f64.sqrt() / 2.0);
+    let sqrt3_over2 = S::from_f64(libm::sqrt(3.0) / 2.0);
     let theta_sector = theta_out - theta_v; // angle relative to vertex
     let cos_sector = theta_sector.cos().abs().max(S::EPSILON);
     let r_hex = v_half * sqrt3_over2 / cos_sector;

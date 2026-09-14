@@ -1,4 +1,3 @@
-#![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::needless_range_loop)]
 
 //! Fictitious Reference Iterative Tuning (FRIT) — Soma et al.

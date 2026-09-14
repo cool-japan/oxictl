@@ -11,8 +11,6 @@
 //! - [`hypothesis_test`]: Statistical decision logic — χ² test and SPRT —
 //!   applied to FDI residuals for principled fault declaration.
 
-#![cfg_attr(not(feature = "std"), no_std)]
-
 pub mod hypothesis_test;
 pub mod observer_fdi;
 pub mod parity_space;

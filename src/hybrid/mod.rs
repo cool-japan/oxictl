@@ -4,7 +4,6 @@
 //! - [`automaton`]: Hybrid automaton with M modes and N-dimensional continuous state
 //! - [`switched_lti`]: Switched linear time-invariant systems with dwell-time constraints
 //! - [`piecewise_affine`]: Piecewise affine (PWA) systems and controllers
-#![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod automaton;
 pub mod piecewise_affine;

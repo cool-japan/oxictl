@@ -101,12 +101,10 @@ impl<S: ControlScalar, const DIM: usize, const M: usize> BSpline<S, DIM, M> {
         for i in 0..=degree {
             knots_buf[M + i] = last_knot_val;
         }
-        let knots_slice: Vec<S> = knots_buf[..n_knots].to_vec();
-        // We have to use the new() path but the data is already validated
+        // Copy only the active knots (no heap allocation, `no_std`-safe); the
+        // data is already validated so the new() path is not needed.
         let mut knots = [S::ZERO; MAX_KNOTS];
-        for (i, &k) in knots_slice.iter().enumerate() {
-            knots[i] = k;
-        }
+        knots[..n_knots].copy_from_slice(&knots_buf[..n_knots]);
         Some(Self {
             control_points,
             knots,

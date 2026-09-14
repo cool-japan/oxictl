@@ -148,9 +148,9 @@ impl<S: ControlScalar, const STATE_DIM: usize> EkfSlam2D<S, STATE_DIM> {
             row[i] = S::ONE;
         }
         // ∂(x') / ∂theta = -v * sin(theta) * dt
-        f[0][2] = S::from_f64((-v.to_f64()) * theta.to_f64().sin() * self.dt.to_f64());
+        f[0][2] = S::from_f64((-v.to_f64()) * libm::sin(theta.to_f64()) * self.dt.to_f64());
         // ∂(y') / ∂theta =  v * cos(theta) * dt
-        f[1][2] = S::from_f64(v.to_f64() * theta.to_f64().cos() * self.dt.to_f64());
+        f[1][2] = S::from_f64(v.to_f64() * libm::cos(theta.to_f64()) * self.dt.to_f64());
 
         // Build process noise Q (STATE_DIM × STATE_DIM).
         // Only the vehicle block is nonzero.

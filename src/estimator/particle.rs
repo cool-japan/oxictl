@@ -9,8 +9,9 @@
 ///
 /// State dim N, observation dim M. `P` = number of particles.
 ///
-/// Only available with `std` feature (requires Vec/allocation).
-use std::vec::Vec;
+/// Requires a heap allocator (particle count is chosen at run time): available
+/// with the `alloc` feature (implied by `std`), including on `no_std` targets.
+use alloc::vec::Vec;
 
 /// A single weighted particle.
 #[derive(Debug, Clone)]
@@ -100,13 +101,13 @@ impl<const N: usize, const M: usize> ParticleFilter<N, M> {
             .fold(f64::NEG_INFINITY, f64::max);
         let sum_exp = log_weights
             .iter()
-            .map(|&lw| (lw - max_lw).exp())
+            .map(|&lw| libm::exp(lw - max_lw))
             .sum::<f64>();
-        let log_sum = max_lw + sum_exp.ln();
+        let log_sum = max_lw + libm::log(sum_exp);
 
         // Normalize weights
         for (p, &lw) in self.particles.iter_mut().zip(log_weights.iter()) {
-            p.weight = (lw - log_sum).exp();
+            p.weight = libm::exp(lw - log_sum);
         }
     }
 
@@ -212,9 +213,9 @@ impl<const N: usize, const M: usize> ParticleFilter<N, M> {
         // Box-Muller transform
         let u1 = self.rand_uniform().max(1e-15);
         let u2 = self.rand_uniform();
-        let r = (-2.0 * u1.ln()).sqrt();
+        let r = libm::sqrt(-2.0 * libm::log(u1));
         let theta = 2.0 * core::f64::consts::PI * u2;
-        r * theta.cos()
+        r * libm::cos(theta)
     }
 }
 
@@ -225,7 +226,7 @@ pub fn gaussian_log_likelihood<const N: usize>(residual: &[f64; N], std_dev: &[f
     let mut ll = 0.0;
     for (&r, &s) in residual.iter().zip(std_dev.iter()) {
         let s2 = s * s;
-        ll -= 0.5 * (r * r / s2 + (2.0 * core::f64::consts::PI * s2).ln());
+        ll -= 0.5 * (r * r / s2 + libm::log(2.0 * core::f64::consts::PI * s2));
     }
     ll
 }

@@ -6,8 +6,6 @@
 //! - [`ekf_slam_2d`]    — 2D Extended Kalman Filter SLAM (range–bearing landmarks).
 //! - [`pose_graph`]     — linear pose-graph optimisation with loop-closure.
 
-#![cfg_attr(not(feature = "std"), no_std)]
-
 pub mod dead_reckoning;
 pub mod ekf_slam_2d;
 pub mod pose_graph;

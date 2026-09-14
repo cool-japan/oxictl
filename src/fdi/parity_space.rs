@@ -6,8 +6,6 @@
 //! Under no fault, ||r[k]|| ≈ 0; under a fault, ||r[k]|| grows detectably.
 //! A consecutive-fault counter prevents false alarms from transient noise.
 
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use crate::core::scalar::ControlScalar;
 
 /// Errors returned by the FDI subsystem.

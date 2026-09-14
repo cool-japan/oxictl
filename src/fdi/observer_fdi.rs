@@ -14,8 +14,6 @@
 //! the model matches the plant.  A sensor/actuator fault shifts the residual.
 //! Per-channel thresholding enables isolation of which output is affected.
 
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use crate::core::scalar::ControlScalar;
 use crate::fdi::parity_space::FdiError;
 

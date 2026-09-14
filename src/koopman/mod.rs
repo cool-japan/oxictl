@@ -10,8 +10,6 @@
 //! - [`edmd`] — Extended Dynamic Mode Decomposition (EDMD) to fit K from data.
 //! - [`koopman_mpc`] — Single-step greedy Koopman MPC in the lifted space.
 
-#![cfg_attr(not(feature = "std"), no_std)]
-
 pub mod edmd;
 pub mod koopman_mpc;
 pub mod lifting_functions;
