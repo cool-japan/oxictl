@@ -11,7 +11,7 @@ license = "Apache-2.0"
 repository = "https://github.com/cool-japan/oxictl"
 readme = "README.md"
 keywords = ["control-systems", "robotics", "pid", "motor-control", "embedded"]
-categories = ["science", "algorithms", "simulation", "embedded", "no-std"]
+categories = ["science::robotics", "algorithms", "simulation", "embedded", "no-std"]
 
 [workspace.package]
 authors = ["COOLJAPAN OU (Team Kitasan)"]
